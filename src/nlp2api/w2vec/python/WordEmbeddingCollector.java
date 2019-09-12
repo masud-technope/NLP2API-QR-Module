@@ -8,54 +8,44 @@
 
 package nlp2api.w2vec.python;
 
-import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import nlp2api.utility.ContentLoader;
 import nlp2api.config.StaticData;
 
 public class WordEmbeddingCollector {
 
-	String candidateDir;
-	ArrayList<String> candidates;
+	String embeddingFile;
+	HashMap<String, ArrayList<Double>> masterEmbeddingMap;
 
 	public WordEmbeddingCollector() {
-		this.candidateDir = StaticData.EXP_HOME + "/candidate";
-		this.candidates = new ArrayList<>();
-	}
-
-	public WordEmbeddingCollector(ArrayList<String> candidates) {
-		this.candidates = candidates;
-	}
-
-	protected HashSet<String> developTokens() {
-		File[] files = new File(this.candidateDir).listFiles();
-		HashSet<String> tokens = new HashSet<>();
-		for (File f : files) {
-			tokens.addAll(ContentLoader.getAllTokensSC(f.getAbsolutePath()));
-		}
-		return tokens;
+		this.embeddingFile = StaticData.HOME_DIR + "/nlp2api-word2vec/embeddings.txt";
+		this.masterEmbeddingMap = new HashMap<String, ArrayList<Double>>();
 	}
 
 	public HashMap<String, ArrayList<Double>> getMasterEmbeddingList() {
-		if (this.candidates.isEmpty()) {
-			this.candidates = new ArrayList<String>(developTokens());
+		ArrayList<String> fileLines = ContentLoader.getAllTokensSC(this.embeddingFile);
+		int entries=0;
+		for (String fileLine : fileLines) {
+			String[] parts = fileLine.split("\\s+");
+			String key = parts[0].trim();
+			ArrayList<Double> tempDim = new ArrayList<>();
+			for (int i = 1; i < parts.length; i++) {
+				double score = Double.parseDouble(parts[i].trim());
+				tempDim.add(score);
+			}
+			this.masterEmbeddingMap.put(key, tempDim);
+			entries++;
 		}
 		
-		//windows version
-		/*W2WSimCollector w2w = new W2WSimCollector(new ArrayList<String>(
-				this.candidates));
-		return w2w.getWordVectors(); */
+		System.out.println("Items loaded:"+entries);
 		
-		//platform-independent version
-		W2VecCollector w2vecColl=new W2VecCollector(this.candidates);
-		return w2vecColl.getWordVectors();
+		return this.masterEmbeddingMap;
 	}
 
 	public static void main(String[] args) {
 		// TODO Auto-generated method stub
-		WordEmbeddingCollector wecoll = new WordEmbeddingCollector();
-		System.out.println(wecoll.getMasterEmbeddingList());
+		WordEmbeddingCollector wecoll=new WordEmbeddingCollector();
+		System.out.println(wecoll.getMasterEmbeddingList().entrySet().size());
 	}
 }

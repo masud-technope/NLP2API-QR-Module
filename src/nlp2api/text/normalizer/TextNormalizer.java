@@ -6,7 +6,6 @@
  * 
  */
 
-
 package nlp2api.text.normalizer;
 
 import java.util.ArrayList;

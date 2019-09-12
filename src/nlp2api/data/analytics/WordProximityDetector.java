@@ -11,7 +11,6 @@ package nlp2api.data.analytics;
 import java.util.ArrayList;
 import java.util.HashMap;
 import nlp2api.similarity.CosineMeasure;
-import nlp2api.w2vec.python.W2VecCollector;
 import edu.stanford.nlp.util.ArrayUtils;
 
 public class WordProximityDetector {
@@ -25,27 +24,7 @@ public class WordProximityDetector {
 		this.firstWord = firstWord;
 		this.secondWord = secondWord;
 		this.proximityMap = proximityMap;
-	}
-
-	public WordProximityDetector(String firstWord, String secondWord) {
-		this.firstWord = firstWord;
-		this.secondWord = secondWord;
-		this.proximityMap = developProximity();
-	}
-
-	public WordProximityDetector() {
-		// default constructor
-	}
-
-	protected HashMap<String, ArrayList<Double>> developProximity() {
-		ArrayList<String> temp = new ArrayList<>();
-		temp.add(this.firstWord);
-		temp.add(this.secondWord);
-		//W2WSimCollector w2wcoll = new W2WSimCollector(temp);
-		//return w2wcoll.getWordVectors();
-		W2VecCollector w2vcoll=new W2VecCollector(temp);
-		return w2vcoll.getWordVectors();
-	}
+	}	
 
 	public double determineProximity(ArrayList<Double> firstVec,
 			ArrayList<Double> secondVec) {
@@ -67,11 +46,4 @@ public class WordProximityDetector {
 		return proximity;
 	}
 
-	public static void main(String[] args) {
-		// TODO Auto-generated method stub
-		String firstWord = "HttpRequest";
-		String secondWord = "HttpServletRequest";
-		System.out.println(new WordProximityDetector(firstWord, secondWord)
-				.determineProximity());
-	}
 }

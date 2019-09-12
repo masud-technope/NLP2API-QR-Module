@@ -8,10 +8,7 @@ package nlp2api.code.search.bda.scorecalc;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
-import nlp2api.config.StaticData;
 import nlp2api.stopwords.StopWordManager;
-import nlp2api.text.normalizer.TextNormalizer;
-import nlp2api.utility.ContentWriter;
 
 public class BordaScoreCalc {
 

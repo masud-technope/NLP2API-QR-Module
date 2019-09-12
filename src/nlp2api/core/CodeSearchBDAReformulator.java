@@ -5,19 +5,20 @@
  * 
  */
 
-package nlp2api.code.search.bda.scorecalc;
+package nlp2api.core;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import nlp2api.config.StaticData;
 import nlp2api.text.normalizer.TextNormalizer;
-import nlp2api.utility.ContentWriter;
 import nlp2api.utility.ItemSorter;
 import nlp2api.utility.MiscUtility;
+import nlp2api.w2vec.python.WordEmbeddingCollector;
 import nlp2api.code.search.bda.CandidateManager;
+import nlp2api.code.search.bda.scorecalc.APIKeywordProximityCalc;
+import nlp2api.code.search.bda.scorecalc.BordaScoreCalc;
 
 public class CodeSearchBDAReformulator {
 
@@ -26,10 +27,12 @@ public class CodeSearchBDAReformulator {
 	int TOPK;
 	String scoreKey;
 
-	public CodeSearchBDAReformulator(int caseNo, String initialQuery, int TOPK,
-			String scoreKey) {
+	// load master embedding once
+	static HashMap<String, ArrayList<Double>> masterList = new WordEmbeddingCollector().getMasterEmbeddingList();
+
+	public CodeSearchBDAReformulator(int caseNo, String initialQuery, int TOPK, String scoreKey) {
 		this.caseNo = caseNo;
-		this.initialQuery = initialQuery;//  initialQuery.toLowerCase();
+		this.initialQuery = initialQuery;// initialQuery.toLowerCase();
 		this.TOPK = TOPK;
 		this.scoreKey = scoreKey;
 	}
@@ -48,21 +51,19 @@ public class CodeSearchBDAReformulator {
 		return temp.trim();
 	}
 
-	protected ArrayList<String> extractTopKAPINames(
-			HashMap<String, Double> scoreMap) {
-		List<Map.Entry<String, Double>> sorted = ItemSorter
-				.sortHashMapDouble(scoreMap);
-		ArrayList<String> suggestion = new ArrayList<>();
+	protected HashMap<String, Double> extractTopKAPINames(HashMap<String, Double> scoreMap) {
+		List<Map.Entry<String, Double>> sorted = ItemSorter.sortHashMapDouble(scoreMap);
+		HashMap<String, Double> suggestion = new HashMap<String, Double>();
 		for (Map.Entry<String, Double> entry : sorted) {
-			suggestion.add(entry.getKey());
+			suggestion.put(entry.getKey(), entry.getValue());
 			if (suggestion.size() == TOPK)
 				break;
 		}
 		return suggestion;
 	}
 
-	protected ArrayList<String> combinedExtractTopKAPI(
-			HashMap<String, Double> bscoreMap, HashMap<String, Double> pscoreMap) {
+	protected HashMap<String, Double> combinedExtractTopKAPI(HashMap<String, Double> bscoreMap,
+			HashMap<String, Double> pscoreMap) {
 		HashMap<String, Double> combined = new HashMap<>();
 
 		switch (scoreKey) {
@@ -89,8 +90,7 @@ public class CodeSearchBDAReformulator {
 			for (String key : pscoreMap.keySet()) {
 				if (combined.containsKey(key)) {
 					double bscore = combined.get(key);
-					double pscore = pscoreMap.get(key)
-							* StaticData.w2vec_Weight;
+					double pscore = pscoreMap.get(key) * StaticData.w2vec_Weight;
 					combined.put(key, bscore + pscore);
 				} else {
 					double score = pscoreMap.get(key) * StaticData.w2vec_Weight;
@@ -105,19 +105,7 @@ public class CodeSearchBDAReformulator {
 		return extractTopKAPINames(combined);
 	}
 
-	protected void saveAPICandidates(int caseID, HashSet<String> candidates) {
-		// save the API candidates
-		ArrayList<String> wordList = new ArrayList<>();
-		wordList.addAll(MiscUtility
-				.str2List(getQueryKeywords(this.initialQuery)));
-		wordList.addAll(candidates);
-		String outputFile = StaticData.EXP_HOME + "/candidate/" + caseID
-				+ ".txt";
-		ContentWriter.writeContent(outputFile, wordList);
-	}
-
-	protected HashMap<String, Double> normalizedScores(
-			HashMap<String, Double> scoreMap) {
+	protected HashMap<String, Double> normalizedScores(HashMap<String, Double> scoreMap) {
 		double maxScore = 0;
 		for (String key : scoreMap.keySet()) {
 			double myScore = scoreMap.get(key);
@@ -133,47 +121,26 @@ public class CodeSearchBDAReformulator {
 		return scoreMap;
 	}
 
-	public String provideRelevantAPIs() {
+	public HashMap<String, Double> provideRelevantAPIs() {
 		// String keywords = getQueryKeywords();
-		CandidateManager candidateManager = new CandidateManager(caseNo,
-				initialQuery, StaticData.PRF_SIZE);
-		HashMap<String, ArrayList<String>> candidateMap = candidateManager
-				.collectQRCandidates();
-		
+		CandidateManager candidateManager = new CandidateManager(caseNo, initialQuery, StaticData.PRF_SIZE);
+		HashMap<String, ArrayList<String>> candidateMap = candidateManager.collectQRCandidates(true);
+
 		BordaScoreCalc borda = new BordaScoreCalc(candidateMap);
 		HashMap<String, Double> bscoreMap = borda.calculateBordaScore();
 
 		// normalize the scores
 		bscoreMap = normalizedScores(bscoreMap);
-		
-		if (scoreKey.equals("borda")) {
-			//always save the candidates
-			saveAPICandidates(caseNo, new HashSet<String>(bscoreMap.keySet()));
-			return MiscUtility.list2Str(extractTopKAPINames(bscoreMap));
-		}
 
 		String normalized = getQueryKeywords(initialQuery);
-		APIKeywordProximityCalc akpCalc = new APIKeywordProximityCalc(
-				MiscUtility.str2List(normalized), new ArrayList<String>(
-						bscoreMap.keySet()));
+		APIKeywordProximityCalc akpCalc = new APIKeywordProximityCalc(MiscUtility.str2List(normalized),
+				new ArrayList<String>(bscoreMap.keySet()), masterList);
 
-		if (scoreKey.equals("w2vec-pp")) {
-			akpCalc.saveAPICandidates(caseNo);
-			return new String();
-		}
-
-		HashMap<String, Double> akpScoreMap = akpCalc
-				.calculateQAProximityLocal();
+		HashMap<String, Double> akpScoreMap = akpCalc.calculateQAProximityLocal();
 		// .calculateKeywordAPIProximity();
 
-		if (scoreKey.equals("w2vec")) {
-			return MiscUtility.list2Str(extractTopKAPINames(akpScoreMap));
-		}
+		return combinedExtractTopKAPI(bscoreMap, akpScoreMap);
 
-		String combinedQuery = MiscUtility.list2Str(combinedExtractTopKAPI(
-				bscoreMap, akpScoreMap));
-
-		return combinedQuery;
 	}
 
 	public static void main(String[] args) {
@@ -182,8 +149,7 @@ public class CodeSearchBDAReformulator {
 		String searchQuery = "How do I execute Http Get request?";
 		searchQuery = new TextNormalizer(searchQuery).normalizeTextLight();
 		int TOPK = 10;
-		String suggested = new CodeSearchBDAReformulator(caseNo, searchQuery,
-				TOPK, "borda").provideRelevantAPIs();
-		System.out.println(suggested);
+		System.out.println(new CodeSearchBDAReformulator(caseNo, searchQuery, TOPK, "both").provideRelevantAPIs());
+
 	}
 }

@@ -12,15 +12,16 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Scanner;
+import nlp2api.config.StaticData;
 import nlp2api.utility.ContentLoader;
 import nlp2api.utility.MiscUtility;
 
 public class StopWordManager {
 
 	public ArrayList<String> stopList;
-	String stopDir = "./data/stop-words-english-total.txt";
-	String javaKeywordFile = "./data/java-keywords.txt";
-	String javaLangKeywordFile = "./data/java-lang-keywords.txt";
+	String stopDir = StaticData.HOME_DIR + "/pp-data/stop-words-english-total.txt";
+	String javaKeywordFile = StaticData.HOME_DIR + "/pp-data/java-keywords.txt";
+	String javaLangKeywordFile = StaticData.HOME_DIR + "/pp-data/java-lang-keywords.txt";
 
 	public StopWordManager() {
 		// initialize the Hash set
@@ -58,12 +59,10 @@ public class StopWordManager {
 			scanner.close();
 
 			// now add the programming keywords
-			ArrayList<String> keywords = ContentLoader
-					.getAllLinesOptList(javaKeywordFile);
+			ArrayList<String> keywords = ContentLoader.getAllLinesOptList(javaKeywordFile);
 			this.stopList.addAll(keywords);
 
-			ArrayList<String> langkeywords = ContentLoader
-					.getAllLinesOptList(javaLangKeywordFile);
+			ArrayList<String> langkeywords = ContentLoader.getAllLinesOptList(javaLangKeywordFile);
 			this.stopList.addAll(langkeywords);
 
 		} catch (Exception e) {
@@ -125,8 +124,7 @@ public class StopWordManager {
 	public ArrayList<String> getRefinedList(String[] words) {
 		ArrayList<String> refined = new ArrayList<>();
 		for (String word : words) {
-			if (!this.stopList.contains(word.toLowerCase())
-					|| !this.stopList.contains(word)
+			if (!this.stopList.contains(word.toLowerCase()) || !this.stopList.contains(word)
 					|| !this.stopList.contains(word.toUpperCase())) {
 				refined.add(word);
 			}
@@ -137,8 +135,7 @@ public class StopWordManager {
 	public ArrayList<String> getRefinedList(ArrayList<String> words) {
 		ArrayList<String> refined = new ArrayList<>();
 		for (String word : words) {
-			if (!this.stopList.contains(word.toLowerCase())
-					|| !this.stopList.contains(word)
+			if (!this.stopList.contains(word.toLowerCase()) || !this.stopList.contains(word)
 					|| !this.stopList.contains(word.toUpperCase())) {
 				refined.add(word);
 			}

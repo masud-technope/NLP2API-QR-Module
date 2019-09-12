@@ -5,15 +5,12 @@
  * It collects candidate API classes from relevant Stack Overflow threads for each given query 
  */
 
-
 package nlp2api.code.search.bda;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import nlp2api.text.normalizer.TextNormalizer;
-import nlp2api.utility.ContentWriter;
+import nlp2api.utility.ContentLoader;
 import nlp2api.utility.MiscUtility;
-import nlp2api.utility.QueryLoader;
 import nlp2api.config.StaticData;
 
 public class CandidateManager {
@@ -28,101 +25,25 @@ public class CandidateManager {
 		this.caseNo = caseNo;
 	}
 
-	public HashMap<String, ArrayList<String>> collectQRCandidates() {
-		// collect query reformulation candidates
-		HashMap<String, ArrayList<String>> prfColl = new PRFProvider(
-				this.initialQuery, this.TOPK).getPRFExtendedV2();
-		HashMap<String, String> candidateMap = new HashMap<>();
-		HashMap<String, ArrayList<String>> candidateMapExt = new HashMap<>();
-		for (String prfDocKey : prfColl.keySet()) {
-			ArrayList<String> prfDocuments = prfColl.get(prfDocKey);
-			PRQueryProvider prqProvider = new PRQueryProvider(prfDocuments,
-					prfDocKey);
-
-			ArrayList<String> candidateQR_PR = new ArrayList<>();
-			ArrayList<String> candidateQR_TI = new ArrayList<>();
-
-			String indexFolder = new String();
-
-			switch (prfDocKey) {
-			case "qc":
-				candidateQR_PR = prqProvider.getPRFQueryTerms();
-				// if (StaticData.COMBINE_PR_TFIDF) {
-				indexFolder = StaticData.EXP_HOME + "/dataset/"
-						+ StaticData.SO_QUESTION_CODE_INDEX;
-				candidateQR_TI = prqProvider.getPRFQueryTermsTFIDF(indexFolder);
-				// }
-				break;
-			case "ac":
-				candidateQR_PR = prqProvider.getPRFQueryTerms();
-				// if (StaticData.COMBINE_PR_TFIDF) {
-				indexFolder = StaticData.EXP_HOME + "/dataset/"
-						+ StaticData.SO_ANSWER_CODE_INDEX;
-				candidateQR_TI = prqProvider.getPRFQueryTermsTFIDF(indexFolder);
-				// }
-				break;
-			case "qac":
-				candidateQR_PR = prqProvider.getPRFQueryTerms();
-				if (StaticData.COMBINE_PR_TFIDF) {
-					indexFolder = StaticData.EXP_HOME + "/dataset/"
-							+ StaticData.SO_QA_INDEX;
-					candidateQR_TI = prqProvider
-							.getPRFQueryTermsTFIDF(indexFolder);
-				}
-				break;
-			}
-
-			// refine the candidates
-			// candidateQR_PR = JDKFilter.filterNonJDKClasses(candidateQR_PR);
-			// candidateQR_TI = JDKFilter.filterNonJDKClasses(candidateQR_TI);
-
-			// now add the candidates
-			if (StaticData.PR_ONLY) {
-				candidateMap.put(prfDocKey + "_PR",
-						MiscUtility.list2Str(candidateQR_PR));
-				// System.out.println(MiscUtility.list2Str(candidateQR));
-				candidateMapExt.put(prfDocKey + "_PR", candidateQR_PR);
-			} else if (StaticData.COMBINE_PR_TFIDF) {
-				candidateMap.put(prfDocKey + "_PR",
-						MiscUtility.list2Str(candidateQR_PR));
-				// System.out.println(MiscUtility.list2Str(candidateQR));
-				candidateMapExt.put(prfDocKey + "_PR", candidateQR_PR);
-
-				candidateMap.put(prfDocKey + "_TI",
-						MiscUtility.list2Str(candidateQR_TI));
-				candidateMapExt.put(prfDocKey + "_TI", candidateQR_TI);
-			} else {
-				candidateMap.put(prfDocKey + "_TI",
-						MiscUtility.list2Str(candidateQR_TI));
-				candidateMapExt.put(prfDocKey + "_TI", candidateQR_TI);
-			}
+	public HashMap<String, ArrayList<String>> collectQRCandidates(boolean local) {
+		String candidateFile = StaticData.HOME_DIR + "/nlp2api-candidate/" + caseNo + ".txt";
+		ArrayList<String> cLines = ContentLoader.getAllLinesOptList(candidateFile);
+		HashMap<String, ArrayList<String>> candidateMap = new HashMap<String, ArrayList<String>>();
+		for (String cLine : cLines) {
+			String[] parts = cLine.split(":");
+			String candidateSourceKey = parts[0].trim();
+			ArrayList<String> candidateList = new ArrayList<String>();
+			candidateList = MiscUtility.str2List(parts[1].trim());
+			candidateMap.put(candidateSourceKey, candidateList);
 		}
-		// this.saveReformulationCandidates(this.caseNo, candidateMap);
-		return candidateMapExt;
-	}
-
-	protected void saveReformulationCandidates(int key,
-			HashMap<String, String> candidateMap) {
-		String outFile = StaticData.EXP_HOME + "/candidate/" + key + ".txt";
-		ArrayList<String> candidates = new ArrayList<>();
-		for (String ckey : candidateMap.keySet()) {
-			String candidate = ckey + ":" + candidateMap.get(ckey);
-			candidates.add(candidate);
-		}
-		ContentWriter.writeContent(outFile, candidates);
-		System.out.println("Done: " + caseNo);
+		return candidateMap;
 	}
 
 	public static void main(String[] args) {
 		// TODO Auto-generated method stub
-		// int caseNo = 2;
-		// String query = "How do I compress or zip a directory recursively?";
+		int caseNo = 2;
+		String query = "How do I compress or zip a directory recursively?";
+		System.out.println(new CandidateManager(caseNo, query, 10).collectQRCandidates(true));
 
-		HashMap<Integer, String> queryMap = QueryLoader.loadQueries();
-		for (int caseNo : queryMap.keySet()) {
-			String query = queryMap.get(caseNo);
-			String normQuery = new TextNormalizer(query).normalizeTextLight();
-			new CandidateManager(caseNo, normQuery, 10).collectQRCandidates();
-		}
 	}
 }
