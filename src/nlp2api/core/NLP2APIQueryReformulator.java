@@ -20,7 +20,7 @@ import nlp2api.code.search.bda.CandidateManager;
 import nlp2api.code.search.bda.scorecalc.APIKeywordProximityCalc;
 import nlp2api.code.search.bda.scorecalc.BordaScoreCalc;
 
-public class CodeSearchBDAReformulator {
+public class NLP2APIQueryReformulator {
 
 	int caseNo;
 	String initialQuery;
@@ -30,7 +30,7 @@ public class CodeSearchBDAReformulator {
 	// load master embedding once
 	static HashMap<String, ArrayList<Double>> masterList = new WordEmbeddingCollector().getMasterEmbeddingList();
 
-	public CodeSearchBDAReformulator(int caseNo, String initialQuery, int TOPK, String scoreKey) {
+	public NLP2APIQueryReformulator(int caseNo, String initialQuery, int TOPK, String scoreKey) {
 		this.caseNo = caseNo;
 		this.initialQuery = initialQuery;// initialQuery.toLowerCase();
 		this.TOPK = TOPK;
@@ -140,7 +140,6 @@ public class CodeSearchBDAReformulator {
 		// .calculateKeywordAPIProximity();
 
 		return combinedExtractTopKAPI(bscoreMap, akpScoreMap);
-
 	}
 
 	public static void main(String[] args) {
@@ -149,7 +148,7 @@ public class CodeSearchBDAReformulator {
 		String searchQuery = "How do I execute Http Get request?";
 		searchQuery = new TextNormalizer(searchQuery).normalizeTextLight();
 		int TOPK = 10;
-		System.out.println(new CodeSearchBDAReformulator(caseNo, searchQuery, TOPK, "both").provideRelevantAPIs());
+		System.out.println(new NLP2APIQueryReformulator(caseNo, searchQuery, TOPK, "both").provideRelevantAPIs());
 
 	}
 }

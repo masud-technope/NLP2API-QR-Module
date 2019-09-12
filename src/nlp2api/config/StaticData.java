@@ -9,7 +9,8 @@ package nlp2api.config;
 
 public class StaticData {
 	// public static String EXP_HOME = System.getProperty("user.dir");//
-	public static String HOME_DIR = "F:\\MyWorks\\Thesis Works\\PhDThesisTool";
+	//public static String HOME_DIR = "F:\\MyWorks\\Thesis Works\\PhDThesisTool";
+	public static String HOME_DIR = "C:\\MyWorks\\PhDThesisTool";
 
 	public static int PRF_SIZE = 35;// 30;
 	public static int PRF_QR_SIZE = 16;
